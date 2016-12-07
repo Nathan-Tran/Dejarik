@@ -36,46 +36,51 @@ public class BoardManager : MonoBehaviour
 
 	private void Update()
 	{
-		UpdateSelection ();
-		DrawChessboard ();
-
 		if (Input.GetMouseButtonDown (0))
-		{
+        {
+            UpdateSelection();
+
             if (selectedChessman != null)
             {
-                Debug.Log("BANG");
-            }
-            else if (selectionX >= 0 && selectionY >= 0)
-			{
-				/*if (selectedChessman == null) 
-				{
-					// Select the chessman
-					SelectChessman(selectionX,selectionY);
-				}
-				else 
-				{
-					// Move the chessman
-					MoveChessman(selectionX,selectionY);
-				}*/
-
-                if(selectedChessman != null)
+                if (selectionX >= 0 && selectionY >= 0)
                 {
+                    /*if (selectedChessman == null) 
+                    {
+                        // Select the chessman
+                        SelectChessman(selectionX,selectionY);
+                    }
+                    else 
+                    {
+                        // Move the chessman
+                        MoveChessman(selectionX,selectionY);
+                    }*/
+
                     MoveChessman(selectionX, selectionY);
                 }
-			}
-		}
-	}
+                else
+                {
+                }
+            }
+        }
 
-	private void SelectChessman(int x,int y)
+        DrawChessboard();
+    }
+
+	private void ActivateChessman()
 	{
-		if (Chessmans [x, y] == null)
+        Debug.Log("ActivateChessman");
+
+        if (selectedChessman == null)
 			return;
 
-		if (Chessmans [x, y].isWhite != isWhiteTurn)
-			return;
+        if (selectedChessman.isWhite != isWhiteTurn)
+        {
+            selectedChessman = null;
+            return;
+        }
 
 		bool hasAtleastOneMove = false;
-		allowedMoves = Chessmans [x, y].PossibleMove ();
+		allowedMoves = selectedChessman.PossibleMove ();
 		for (int i = 0; i < 8; i++)
 			for (int j = 0; j < 8; j++)
 				if (allowedMoves [i, j])
@@ -84,7 +89,7 @@ public class BoardManager : MonoBehaviour
 		if (!hasAtleastOneMove)
 			return;
 
-		selectedChessman = Chessmans [x, y];
+		//selectedChessman = Chessmans [x, y];
 		previousMat = selectedChessman.GetComponentInChildren<MeshRenderer> ().material;
 		selectedMat.mainTexture = previousMat.mainTexture;
 		selectedChessman.GetComponentInChildren<MeshRenderer> ().material = selectedMat;
@@ -93,7 +98,8 @@ public class BoardManager : MonoBehaviour
 
 	private void MoveChessman(int x,int y)
 	{
-		if (allowedMoves[x,y]) 
+        Debug.Log("MoveChessman");
+        if (allowedMoves[x,y]) 
 		{
 			Chessman c = Chessmans [x, y];
 
@@ -174,9 +180,22 @@ public class BoardManager : MonoBehaviour
 
         if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 25.0f, LayerMask.GetMask("GamePieces")))
         {
-            Debug.Log("sniped ya!");
-
-            selectedChessman = hit.transform.gameObject.GetComponentInParent<Chessman>();
+            if(selectedChessman == null)
+            {
+                selectedChessman = hit.transform.gameObject.GetComponentInParent<Chessman>();
+                ActivateChessman();
+            }
+            else
+            {
+                /*
+                 * What happens when a friendly or enemy piece is clicked on while another (or even the same) piece is selected.
+                 * 
+                 * This is a TO DO for after the radial movement is implemented as currently we need to get the grid 
+                 * coordinates (not the translation) of a piece in order to check if we should let the player move there
+                 * or if we should just consider it an invalid move and deselect everything.
+                 */
+                
+            }
             selectionX = -1;
             selectionY = -1;
         }
@@ -186,8 +205,8 @@ public class BoardManager : MonoBehaviour
 			selectionY = (int)hit.point.z;
 		}
 		else
-		{
-			selectionX = -1;
+        {
+            selectionX = -1;
 			selectionY = -1;
 		}
 	}
