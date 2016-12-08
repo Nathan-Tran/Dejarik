@@ -188,11 +188,15 @@ public class BoardManager : MonoBehaviour
 	private void SpawnAllChessmans()
 	{
 		activeChessman = new List<GameObject> ();
-		Chessmans = new Chessman[8, 8];
-		EnPassantMove = new int[2]{-1,-1};
+		Chessmans = new Chessman[3, 12];
+        //EnPassantMove = new int[2]{-1,-1};
 
-		// Spawn the white team!
+        SpawnChessman(5, 1, 1);
 
+        SpawnChessman(5, 2, 7);
+
+        // Spawn the white team!
+        /*
 		//King
 		SpawnChessman (0,3,0);
 
@@ -238,19 +242,52 @@ public class BoardManager : MonoBehaviour
 		//Pawns
 		for (int i = 0; i < 8; i++)
 			SpawnChessman (11,i,6);
-	}
+
+        */
+    }
 
 	private Vector3 GetTileCenter(int x,int y)
 	{
-		Vector3 origin = Vector3.zero;
+        //8x8 grid math
+
+        /*Vector3 origin = Vector3.zero;
 		origin.x += (TILE_SIZE * x) + TILE_OFFSET;
 		origin.z += (TILE_SIZE * y) + TILE_OFFSET;
-		return origin;
-	}
+		return origin;*/
+
+        //Dejarik board math
+
+        Vector3 origin = Vector3.zero;
+        float tileLength = 3.2f;
+
+        Quaternion lol = Quaternion.AngleAxis(15, Vector3.up);
+
+        if (x == 0)
+        {
+            return origin;
+        }
+        else
+        {
+            //Maybe normalize the vector here?
+
+            return origin + (Quaternion.AngleAxis(15 + (30 * y), Vector3.up) * Vector3.forward) * (tileLength * x);
+        }
+
+    }
 
 	private void DrawChessboard()
 	{
-		Vector3 widthLine = Vector3.right * 8;
+        float lineLength = 8f;
+
+        //Draw debug circles
+
+        for (int i = 0; i <= 12; i++)
+        {
+            Vector3 start = (Quaternion.AngleAxis((30 * i), Vector3.up) * Vector3.forward);
+            Debug.DrawLine(Vector3.zero, start * lineLength);
+        }
+
+        /*Vector3 widthLine = Vector3.right * 8;
 		Vector3 heigthLine = Vector3.forward * 8;
 
 		for (int i = 0; i <= 8; i++) 
@@ -262,10 +299,10 @@ public class BoardManager : MonoBehaviour
 				start = Vector3.right * j;
 				Debug.DrawLine (start, start + heigthLine);
 			}
-		}
+		}*/
 
-		// Draw the selection
-		/*if (selectionX >= 0 && selectionY >= 0)
+        // Draw the selection
+        /*if (selectionX >= 0 && selectionY >= 0)
 		{	
 			Debug.DrawLine (
 				Vector3.forward * selectionY + Vector3.right * selectionX,
@@ -275,7 +312,7 @@ public class BoardManager : MonoBehaviour
 				Vector3.forward * (selectionY + 1 )+ Vector3.right * selectionX,
 				Vector3.forward * selectionY + Vector3.right * (selectionX + 1));
 		}*/
-	}
+    }
 
 	private void EndGame()
 	{
