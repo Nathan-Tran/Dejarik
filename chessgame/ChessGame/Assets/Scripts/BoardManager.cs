@@ -44,21 +44,7 @@ public class BoardManager : MonoBehaviour
             {
                 if (selectionX >= 0 && selectionY >= 0)
                 {
-                    /*if (selectedChessman == null) 
-                    {
-                        // Select the chessman
-                        SelectChessman(selectionX,selectionY);
-                    }
-                    else 
-                    {
-                        // Move the chessman
-                        MoveChessman(selectionX,selectionY);
-                    }*/
-
                     MoveChessman(selectionX, selectionY);
-                }
-                else
-                {
                 }
             }
         }
@@ -68,8 +54,6 @@ public class BoardManager : MonoBehaviour
 
 	private void ActivateChessman()
 	{
-        Debug.Log("ActivateChessman");
-
         if (selectedChessman == null)
 			return;
 
@@ -78,19 +62,20 @@ public class BoardManager : MonoBehaviour
             selectedChessman = null;
             return;
         }
-
+        
 		bool hasAtleastOneMove = false;
 		allowedMoves = selectedChessman.PossibleMove ();
 		for (int i = 0; i < 8; i++)
 			for (int j = 0; j < 8; j++)
 				if (allowedMoves [i, j])
 					hasAtleastOneMove = true;
-
+        /*
 		if (!hasAtleastOneMove)
 			return;
+        */
 
-		//selectedChessman = Chessmans [x, y];
-		previousMat = selectedChessman.GetComponentInChildren<MeshRenderer> ().material;
+        //selectedChessman = Chessmans [x, y];
+        previousMat = selectedChessman.GetComponentInChildren<MeshRenderer> ().material;
 		selectedMat.mainTexture = previousMat.mainTexture;
 		selectedChessman.GetComponentInChildren<MeshRenderer> ().material = selectedMat;
 		BoardHighlights.Instance.HighlightAllowedMoves (allowedMoves);
@@ -98,73 +83,38 @@ public class BoardManager : MonoBehaviour
 
 	private void MoveChessman(int x,int y)
 	{
-        Debug.Log("MoveChessman");
-        if (allowedMoves[x,y]) 
-		{
-			Chessman c = Chessmans [x, y];
+        Debug.Log("Move Chessman called");
+        Chessman c = Chessmans[x, y];
 
-			if (c != null && c.isWhite != isWhiteTurn)
+        if (c != null && c.isWhite != isWhiteTurn)
+        {
+            Debug.Log("Passed the opposite team check");
+            //Capture a piece
+
+            //If it is the king
+            if (c.GetType () == typeof(King))
 			{
-				//Capture a piece
-
-				//If it is the king
-				if (c.GetType () == typeof(King))
-				{
-					EndGame ();
-					return;
-				}
-
-				activeChessman.Remove(c.gameObject);
-				Destroy (c.gameObject);
+				EndGame ();
+				return;
 			}
 
-			if (x == EnPassantMove [0] && y == EnPassantMove [1]) 
-			{
-				if (isWhiteTurn) 
-					c = Chessmans [x, y-1];
-				else 
-					c = Chessmans [x, y+1];
-				
-				activeChessman.Remove(c.gameObject);
-				Destroy (c.gameObject);
-			}
-			EnPassantMove [0] = -1;
-			EnPassantMove [1] = -1;
-			if (selectedChessman.GetType () == typeof(Pawn))
-			{
-				if (y == 7)
-				{
-					activeChessman.Remove(selectedChessman.gameObject);
-					Destroy (selectedChessman.gameObject);
-					SpawnChessman (1, x, y);
-					selectedChessman = Chessmans [x, y];
-				}
-				else if (y == 0)
-				{
-					activeChessman.Remove(selectedChessman.gameObject);
-					Destroy (selectedChessman.gameObject);
-					SpawnChessman (7, x, y);
-					selectedChessman = Chessmans [x, y];
-				}
+			activeChessman.Remove(c.gameObject);
+			Destroy (c.gameObject);
 
-				if (selectedChessman.CurrentY == 1 && y == 3) 
-				{
-					EnPassantMove [0] = x;
-					EnPassantMove [1] = y - 1;
-				}
-				else if (selectedChessman.CurrentY == 6 && y == 4) 
-				{
-					EnPassantMove [0] = x;
-					EnPassantMove [1] = y + 1;
-				}
-			}
-
-			Chessmans [selectedChessman.CurrentX, selectedChessman.CurrentY] = null;
-			selectedChessman.transform.position = GetTileCenter (x, y);
-			selectedChessman.SetPosition (x, y);
-			Chessmans [x, y] = selectedChessman;
-			isWhiteTurn = !isWhiteTurn;
-		}
+            Chessmans[selectedChessman.CurrentX, selectedChessman.CurrentY] = null;
+            selectedChessman.transform.position = GetTileCenter(x, y);
+            selectedChessman.SetPosition(x, y);
+            Chessmans[x, y] = selectedChessman;
+            isWhiteTurn = !isWhiteTurn;
+        }
+        else if(c == null)
+        {
+            Chessmans[selectedChessman.CurrentX, selectedChessman.CurrentY] = null;
+            selectedChessman.transform.position = GetTileCenter(x, y);
+            selectedChessman.SetPosition(x, y);
+            Chessmans[x, y] = selectedChessman;
+            isWhiteTurn = !isWhiteTurn;
+        }
 
 		selectedChessman.GetComponentInChildren<MeshRenderer> ().material = previousMat;
 		BoardHighlights.Instance.Hidehighlights ();
@@ -184,6 +134,8 @@ public class BoardManager : MonoBehaviour
             {
                 selectedChessman = hit.transform.gameObject.GetComponentInParent<Chessman>();
                 ActivateChessman();
+                selectionX = -1;
+                selectionY = -1;
             }
             else
             {
@@ -194,10 +146,23 @@ public class BoardManager : MonoBehaviour
                  * coordinates (not the translation) of a piece in order to check if we should let the player move there
                  * or if we should just consider it an invalid move and deselect everything.
                  */
-                
+
+                //If the player clicked on the same piece twice
+                if (selectedChessman == hit.transform.gameObject.GetComponentInParent<Chessman>())
+                {
+                    selectedChessman.GetComponentInChildren<MeshRenderer>().material = previousMat;
+                    BoardHighlights.Instance.Hidehighlights();
+                    selectedChessman = null;
+
+                    selectionX = -1;
+                    selectionY = -1;
+                }
+                else
+                {
+                    selectionX = hit.transform.gameObject.GetComponentInParent<Chessman>().CurrentX;
+                    selectionY = hit.transform.gameObject.GetComponentInParent<Chessman>().CurrentY;
+                }
             }
-            selectionX = -1;
-            selectionY = -1;
         }
         else if (Physics.Raycast (Camera.main.ScreenPointToRay (Input.mousePosition), out hit, 25.0f, LayerMask.GetMask ("ChessPlane"))) 
 		{
