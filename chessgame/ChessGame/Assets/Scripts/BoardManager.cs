@@ -78,7 +78,7 @@ public class BoardManager : MonoBehaviour
         previousMat = selectedChessman.GetComponentInChildren<MeshRenderer> ().material;
 		selectedMat.mainTexture = previousMat.mainTexture;
 		selectedChessman.GetComponentInChildren<MeshRenderer> ().material = selectedMat;
-		BoardHighlights.Instance.HighlightAllowedMoves (allowedMoves);
+		//BoardHighlights.Instance.HighlightAllowedMoves (allowedMoves);
 	}
 
 	private void MoveChessman(int x,int y)
@@ -117,7 +117,7 @@ public class BoardManager : MonoBehaviour
         }
 
 		selectedChessman.GetComponentInChildren<MeshRenderer> ().material = previousMat;
-		BoardHighlights.Instance.Hidehighlights ();
+		//BoardHighlights.Instance.Hidehighlights ();
 		selectedChessman = null;
 	}
 
@@ -151,7 +151,7 @@ public class BoardManager : MonoBehaviour
                 if (selectedChessman == hit.transform.gameObject.GetComponentInParent<Chessman>())
                 {
                     selectedChessman.GetComponentInChildren<MeshRenderer>().material = previousMat;
-                    BoardHighlights.Instance.Hidehighlights();
+                    //BoardHighlights.Instance.Hidehighlights();
                     selectedChessman = null;
 
                     selectionX = -1;
@@ -288,7 +288,7 @@ public class BoardManager : MonoBehaviour
 			Destroy (go);
 
 		isWhiteTurn = true;
-		BoardHighlights.Instance.Hidehighlights ();
+		//BoardHighlights.Instance.Hidehighlights ();
 		SpawnAllChessmans ();
 	}
 }
