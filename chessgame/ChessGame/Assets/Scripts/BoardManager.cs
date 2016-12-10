@@ -18,6 +18,8 @@ public class BoardManager : MonoBehaviour
 	private float selectionY = -10000;
 
     private const float tileOffset = 3.2f;
+    private const float innerRingRadius = 1.8f;
+    private const float middleRingRadius = 4.3f;
     private const float boardRadius = 8.0f;
 
     public List<GameObject> chessmanPrefabs;
@@ -106,7 +108,7 @@ public class BoardManager : MonoBehaviour
         //These are arbitrary distances
         //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
         //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-        if (distanceFromCentre < 1f)
+        if (distanceFromCentre < 1.8f)
         {
             Debug.Log("CLICKED ON CENTRE");
             boardTrack = 0;
@@ -114,7 +116,7 @@ public class BoardManager : MonoBehaviour
         }
         else
         {
-            if(distanceFromCentre < 3f)
+            if(distanceFromCentre < 4.3f)
             {
                 Debug.Log("CLICKED ON MIDDLE RING");
                 boardTrack = 1;
@@ -125,19 +127,17 @@ public class BoardManager : MonoBehaviour
                 boardTrack = 2;
             }
 
-            //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-            //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-            //You can do better than this shit math
-            //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-            //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-            Debug.Log("X and Y are: " + x + " " + y);
-
             if(x >= 0)
             {
                 if(y < 0)
                 {
                     sectorAngle += 90;
+
+                    boardSector = (int)(sectorAngle + (Mathf.Atan((y * -1) / x) * Mathf.Rad2Deg)) / 30;
+                }
+                else
+                {
+                    boardSector = (int)(sectorAngle + (Mathf.Atan(x / y) * Mathf.Rad2Deg)) / 30;
                 }
             }
             else
@@ -147,15 +147,16 @@ public class BoardManager : MonoBehaviour
                 if (y >= 0)
                 {
                     sectorAngle += 90;
+
+                    boardSector = (int)(sectorAngle + (Mathf.Atan(y / (x * -1)) * Mathf.Rad2Deg)) / 30;
+                }
+                else
+                {
+                    boardSector = (int)(sectorAngle + (Mathf.Atan(x / y) * Mathf.Rad2Deg)) / 30;
                 }
             }
-            Debug.Log("Angle calculated as: " + (sectorAngle + (Mathf.Tan(x / y) * Mathf.Rad2Deg)));
-
-            boardSector = (int) (sectorAngle + (Mathf.Tan(x/y) * Mathf.Rad2Deg)) / 30;
 
         }
-
-        Debug.Log("Board location calculated as: " + boardTrack + " " + boardSector);
 
         Chessman c = Chessmans[boardTrack, boardSector];
 
@@ -264,59 +265,17 @@ public class BoardManager : MonoBehaviour
 		Chessmans = new Chessman[3, 12];
         //EnPassantMove = new int[2]{-1,-1};
 
-        SpawnChessman(5, 1, 1);
+        SpawnChessman(0, 2, 0);
 
-        SpawnChessman(5, 2, 7);
+        SpawnChessman(1, 2, 1);
 
-        // Spawn the white team!
-        /*
-		//King
-		SpawnChessman (0,3,0);
+        SpawnChessman(2, 2, 2);
 
-		//Queen
-		SpawnChessman (1,4,0);
+        SpawnChessman(3, 2, 6);
 
-		//Rooks
-		SpawnChessman (2,0,0);
-		SpawnChessman (2,7,0);
+        SpawnChessman(4, 2, 7);
 
-		//Bishops
-		SpawnChessman (3,2,0);
-		SpawnChessman (3,5,0);
-
-		//Knights
-		SpawnChessman (4,1,0);
-		SpawnChessman (4,6,0);
-
-		//Pawns
-		for (int i = 0; i < 8; i++)
-			SpawnChessman (5,i,1);
-
-		// Spawn the Black team!
-
-		//King
-		SpawnChessman (6,4,7);
-
-		//Queen
-		SpawnChessman (7,3,7);
-
-		//Rooks
-		SpawnChessman (8,0,7);
-		SpawnChessman (8,7,7);
-
-		//Bishops
-		SpawnChessman (9,2,7);
-		SpawnChessman (9,5,7);
-
-		//Knights
-		SpawnChessman (10,1,7);
-		SpawnChessman (10,6,7);
-
-		//Pawns
-		for (int i = 0; i < 8; i++)
-			SpawnChessman (11,i,6);
-
-        */
+        SpawnChessman(5, 2, 8);
     }
 
 	private Vector3 GetTileCenter(float x, float y)
