@@ -10,21 +10,25 @@ public class BoardManager : MonoBehaviour
 	public Chessman[,] Chessmans{ set; get;}
 	private Chessman selectedChessman;
 
-	private const float TILE_SIZE = 1.0f;
-	private const float TILE_OFFSET = 0.5f;
+	//private const float TILE_SIZE = 1.0f;
+	//private const float TILE_OFFSET = 0.5f;
 
-	private int selectionX = -1;
-	private int selectionY = -1;
+    //Let -10000 be the value for an invalid selection
+	private float selectionX = -10000;
+	private float selectionY = -10000;
 
-	public List<GameObject> chessmanPrefabs;
+    private const float tileOffset = 3.2f;
+    private const float innerRingRadius = 1.8f;
+    private const float middleRingRadius = 4.3f;
+    private const float boardRadius = 8.0f;
+
+    public List<GameObject> chessmanPrefabs;
 	private List<GameObject> activeChessman;
 
 	private Material previousMat;
 	public Material selectedMat;
 
 	public int[] EnPassantMove{ set; get;}
-
-	private Quaternion orientation = Quaternion.Euler(0,180,0);
 
 	public bool isWhiteTurn = true;
 
@@ -42,23 +46,10 @@ public class BoardManager : MonoBehaviour
 
             if (selectedChessman != null)
             {
-                if (selectionX >= 0 && selectionY >= 0)
+                //If the selection even makes contact with the plane collider
+                if (selectionX > -10000 && selectionY > -10000)
                 {
-                    /*if (selectedChessman == null) 
-                    {
-                        // Select the chessman
-                        SelectChessman(selectionX,selectionY);
-                    }
-                    else 
-                    {
-                        // Move the chessman
-                        MoveChessman(selectionX,selectionY);
-                    }*/
-
                     MoveChessman(selectionX, selectionY);
-                }
-                else
-                {
                 }
             }
         }
@@ -68,8 +59,6 @@ public class BoardManager : MonoBehaviour
 
 	private void ActivateChessman()
 	{
-        Debug.Log("ActivateChessman");
-
         if (selectedChessman == null)
 			return;
 
@@ -79,95 +68,115 @@ public class BoardManager : MonoBehaviour
             return;
         }
 
-		bool hasAtleastOneMove = false;
+        /*bool hasAtleastOneMove = false;
 		allowedMoves = selectedChessman.PossibleMove ();
 		for (int i = 0; i < 8; i++)
 			for (int j = 0; j < 8; j++)
 				if (allowedMoves [i, j])
 					hasAtleastOneMove = true;
-
+        
 		if (!hasAtleastOneMove)
 			return;
+        */
 
-		//selectedChessman = Chessmans [x, y];
-		previousMat = selectedChessman.GetComponentInChildren<MeshRenderer> ().material;
+        //selectedChessman = Chessmans [x, y];
+        previousMat = selectedChessman.GetComponentInChildren<MeshRenderer> ().material;
 		selectedMat.mainTexture = previousMat.mainTexture;
 		selectedChessman.GetComponentInChildren<MeshRenderer> ().material = selectedMat;
-		BoardHighlights.Instance.HighlightAllowedMoves (allowedMoves);
+		//BoardHighlights.Instance.HighlightAllowedMoves (allowedMoves);
 	}
 
-	private void MoveChessman(int x,int y)
+	private void MoveChessman(float x, float y)
 	{
-        Debug.Log("MoveChessman");
-        if (allowedMoves[x,y]) 
-		{
-			Chessman c = Chessmans [x, y];
+        //Check if the x and y are even on the dejarik board, then calculate what quadrant was intended to be selected
+        //Else return
 
-			if (c != null && c.isWhite != isWhiteTurn)
-			{
-				//Capture a piece
+        float distanceFromCentre = Mathf.Sqrt((x * x) + (y * y));
+        float sectorAngle = 0;
 
-				//If it is the king
-				if (c.GetType () == typeof(King))
-				{
-					EndGame ();
-					return;
-				}
+        int boardTrack, boardSector;
 
-				activeChessman.Remove(c.gameObject);
-				Destroy (c.gameObject);
-			}
+        if (distanceFromCentre > boardRadius)
+        {
+            return;
+        }
 
-			if (x == EnPassantMove [0] && y == EnPassantMove [1]) 
-			{
-				if (isWhiteTurn) 
-					c = Chessmans [x, y-1];
-				else 
-					c = Chessmans [x, y+1];
-				
-				activeChessman.Remove(c.gameObject);
-				Destroy (c.gameObject);
-			}
-			EnPassantMove [0] = -1;
-			EnPassantMove [1] = -1;
-			if (selectedChessman.GetType () == typeof(Pawn))
-			{
-				if (y == 7)
-				{
-					activeChessman.Remove(selectedChessman.gameObject);
-					Destroy (selectedChessman.gameObject);
-					SpawnChessman (1, x, y);
-					selectedChessman = Chessmans [x, y];
-				}
-				else if (y == 0)
-				{
-					activeChessman.Remove(selectedChessman.gameObject);
-					Destroy (selectedChessman.gameObject);
-					SpawnChessman (7, x, y);
-					selectedChessman = Chessmans [x, y];
-				}
+        if (distanceFromCentre < innerRingRadius)
+        {
+            Debug.Log("CLICKED ON CENTRE");
+            boardTrack = 0;
+            boardSector = 0;
+        }
+        else
+        {
+            if(distanceFromCentre < middleRingRadius)
+            {
+                Debug.Log("CLICKED ON MIDDLE RING");
+                boardTrack = 1;
+            }
+            else
+            {
+                Debug.Log("CLICKED ON OUTER RING");
+                boardTrack = 2;
+            }
 
-				if (selectedChessman.CurrentY == 1 && y == 3) 
-				{
-					EnPassantMove [0] = x;
-					EnPassantMove [1] = y - 1;
-				}
-				else if (selectedChessman.CurrentY == 6 && y == 4) 
-				{
-					EnPassantMove [0] = x;
-					EnPassantMove [1] = y + 1;
-				}
-			}
+            if(x >= 0)
+            {
+                if(y < 0)
+                {
+                    sectorAngle += 90;
 
-			Chessmans [selectedChessman.CurrentX, selectedChessman.CurrentY] = null;
-			selectedChessman.transform.position = GetTileCenter (x, y);
-			selectedChessman.SetPosition (x, y);
-			Chessmans [x, y] = selectedChessman;
-			isWhiteTurn = !isWhiteTurn;
-		}
+                    boardSector = (int)(sectorAngle + (Mathf.Atan((y * -1) / x) * Mathf.Rad2Deg)) / 30;
+                }
+                else
+                {
+                    boardSector = (int)(sectorAngle + (Mathf.Atan(x / y) * Mathf.Rad2Deg)) / 30;
+                }
+            }
+            else
+            {
+                sectorAngle += 180;
+
+                if (y >= 0)
+                {
+                    sectorAngle += 90;
+
+                    boardSector = (int)(sectorAngle + (Mathf.Atan(y / (x * -1)) * Mathf.Rad2Deg)) / 30;
+                }
+                else
+                {
+                    boardSector = (int)(sectorAngle + (Mathf.Atan(x / y) * Mathf.Rad2Deg)) / 30;
+                }
+            }
+
+        }
+
+        Chessman c = Chessmans[boardTrack, boardSector];
+
+        if (((c != null && c.isWhite != isWhiteTurn) || (c == null)))
+        {
+            if (c != null && c.isWhite != isWhiteTurn)
+            {
+                Debug.Log("Passed the opposite team check");
+                //Capture a piece
+
+                activeChessman.Remove(c.gameObject);
+                Destroy(c.gameObject);
+            }
+
+            Chessmans[selectedChessman.CurrentX, selectedChessman.CurrentY] = null;
+
+            Transform gamePieceTransform = selectedChessman.transform;
+            gamePieceTransform.position = GetTileCenter(boardTrack, boardSector);
+            gamePieceTransform.rotation = GetBoardOrientation(gamePieceTransform.position);
+
+            selectedChessman.SetPosition(boardTrack, boardSector);
+            Chessmans[boardTrack, boardSector] = selectedChessman;
+            isWhiteTurn = !isWhiteTurn;
+        }
 
 		selectedChessman.GetComponentInChildren<MeshRenderer> ().material = previousMat;
-		BoardHighlights.Instance.Hidehighlights ();
+		//BoardHighlights.Instance.Hidehighlights ();
 		selectedChessman = null;
 	}
 
@@ -184,6 +193,8 @@ public class BoardManager : MonoBehaviour
             {
                 selectedChessman = hit.transform.gameObject.GetComponentInParent<Chessman>();
                 ActivateChessman();
+                selectionX = -10000;
+                selectionY = -10000;
             }
             else
             {
@@ -194,98 +205,120 @@ public class BoardManager : MonoBehaviour
                  * coordinates (not the translation) of a piece in order to check if we should let the player move there
                  * or if we should just consider it an invalid move and deselect everything.
                  */
-                
+
+                //If the player clicked on the same piece twice
+                if (selectedChessman == hit.transform.gameObject.GetComponentInParent<Chessman>())
+                {
+                    selectedChessman.GetComponentInChildren<MeshRenderer>().material = previousMat;
+                    //BoardHighlights.Instance.Hidehighlights();
+                    selectedChessman = null;
+
+                    selectionX = -10000;
+                    selectionY = -10000;
+                }
+                else
+                {
+                    selectionX = hit.transform.gameObject.GetComponentInParent<Chessman>().CurrentX;
+                    selectionY = hit.transform.gameObject.GetComponentInParent<Chessman>().CurrentY;
+                }
             }
-            selectionX = -1;
-            selectionY = -1;
         }
-        else if (Physics.Raycast (Camera.main.ScreenPointToRay (Input.mousePosition), out hit, 25.0f, LayerMask.GetMask ("ChessPlane"))) 
+        else if (Physics.Raycast (Camera.main.ScreenPointToRay (Input.mousePosition), out hit, 25.0f, LayerMask.GetMask ("BoardPlane"))) 
 		{
-            selectionX = (int)hit.point.x;
-			selectionY = (int)hit.point.z;
+            selectionX = hit.point.x;
+			selectionY = hit.point.z;
 		}
 		else
         {
-            selectionX = -1;
-			selectionY = -1;
+            selectionX = -10000;
+			selectionY = -10000;
 		}
 	}
 
 	private void SpawnChessman(int index,int x,int y)
 	{
-		GameObject go = Instantiate (chessmanPrefabs [index], GetTileCenter(x,y), orientation) as GameObject;
-		go.transform.SetParent (transform);
+        Vector3 spawnPoint = GetTileCenter(x, y);
+
+        GameObject go = Instantiate(chessmanPrefabs[index], spawnPoint, GetBoardOrientation(spawnPoint)) as GameObject;
+
+        go.transform.SetParent (transform);
 		Chessmans [x, y] = go.GetComponent<Chessman> ();
 		Chessmans [x, y].SetPosition (x, y);
 		activeChessman.Add (go);
 	}
 
-	private void SpawnAllChessmans()
+    private Quaternion GetBoardOrientation(Vector3 boardTranslation)
+    {
+        Quaternion facingDirection = Quaternion.FromToRotation(Vector3.forward, boardTranslation);
+
+        return facingDirection;
+    }
+
+
+    private void SpawnAllChessmans()
 	{
 		activeChessman = new List<GameObject> ();
-		Chessmans = new Chessman[8, 8];
-		EnPassantMove = new int[2]{-1,-1};
+		Chessmans = new Chessman[3, 12];
+        //EnPassantMove = new int[2]{-1,-1};
 
-		// Spawn the white team!
+        SpawnChessman(0, 2, 0);
 
-		//King
-		SpawnChessman (0,3,0);
+        SpawnChessman(1, 2, 1);
 
-		//Queen
-		SpawnChessman (1,4,0);
+        SpawnChessman(2, 2, 2);
 
-		//Rooks
-		SpawnChessman (2,0,0);
-		SpawnChessman (2,7,0);
+        SpawnChessman(3, 2, 3);
 
-		//Bishops
-		SpawnChessman (3,2,0);
-		SpawnChessman (3,5,0);
+        SpawnChessman(4, 2, 6);
 
-		//Knights
-		SpawnChessman (4,1,0);
-		SpawnChessman (4,6,0);
+        SpawnChessman(5, 2, 7);
 
-		//Pawns
-		for (int i = 0; i < 8; i++)
-			SpawnChessman (5,i,1);
+        SpawnChessman(6, 2, 8);
 
-		// Spawn the Black team!
+        SpawnChessman(7, 2, 9);
+    }
 
-		//King
-		SpawnChessman (6,4,7);
-
-		//Queen
-		SpawnChessman (7,3,7);
-
-		//Rooks
-		SpawnChessman (8,0,7);
-		SpawnChessman (8,7,7);
-
-		//Bishops
-		SpawnChessman (9,2,7);
-		SpawnChessman (9,5,7);
-
-		//Knights
-		SpawnChessman (10,1,7);
-		SpawnChessman (10,6,7);
-
-		//Pawns
-		for (int i = 0; i < 8; i++)
-			SpawnChessman (11,i,6);
-	}
-
-	private Vector3 GetTileCenter(int x,int y)
+	private Vector3 GetTileCenter(float x, float y)
 	{
-		Vector3 origin = Vector3.zero;
+        //8x8 grid math
+
+        /*Vector3 origin = Vector3.zero;
 		origin.x += (TILE_SIZE * x) + TILE_OFFSET;
 		origin.z += (TILE_SIZE * y) + TILE_OFFSET;
-		return origin;
-	}
+		return origin;*/
+
+        //Dejarik board math
+
+        Vector3 origin = Vector3.zero;
+
+        if (x == 0)
+        {
+            return origin;
+        }
+        else
+        {
+            //Maybe normalize the vector here?
+
+            return origin + (Quaternion.AngleAxis(15 + (30 * y), Vector3.up) * Vector3.forward) * (tileOffset * x);
+        }
+
+    }
 
 	private void DrawChessboard()
 	{
-		Vector3 widthLine = Vector3.right * 8;
+        /*
+         * 
+         *Draw debug circles
+         *
+         */
+
+        for (int i = 0; i <= 12; i++)
+        {
+            Vector3 start = (Quaternion.AngleAxis((30 * i), Vector3.up) * Vector3.forward);
+            Debug.DrawLine(Vector3.zero, start * boardRadius);
+        }
+
+        /*Vector3 widthLine = Vector3.right * 8;
 		Vector3 heigthLine = Vector3.forward * 8;
 
 		for (int i = 0; i <= 8; i++) 
@@ -297,10 +330,10 @@ public class BoardManager : MonoBehaviour
 				start = Vector3.right * j;
 				Debug.DrawLine (start, start + heigthLine);
 			}
-		}
+		}*/
 
-		// Draw the selection
-		/*if (selectionX >= 0 && selectionY >= 0)
+        // Draw the selection
+        /*if (selectionX >= 0 && selectionY >= 0)
 		{	
 			Debug.DrawLine (
 				Vector3.forward * selectionY + Vector3.right * selectionX,
@@ -310,7 +343,7 @@ public class BoardManager : MonoBehaviour
 				Vector3.forward * (selectionY + 1 )+ Vector3.right * selectionX,
 				Vector3.forward * selectionY + Vector3.right * (selectionX + 1));
 		}*/
-	}
+    }
 
 	private void EndGame()
 	{
@@ -323,7 +356,7 @@ public class BoardManager : MonoBehaviour
 			Destroy (go);
 
 		isWhiteTurn = true;
-		BoardHighlights.Instance.Hidehighlights ();
+		//BoardHighlights.Instance.Hidehighlights ();
 		SpawnAllChessmans ();
 	}
 }
