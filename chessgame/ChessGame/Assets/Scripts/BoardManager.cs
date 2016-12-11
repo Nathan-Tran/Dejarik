@@ -30,8 +30,6 @@ public class BoardManager : MonoBehaviour
 
 	public int[] EnPassantMove{ set; get;}
 
-	private Quaternion orientation = Quaternion.Euler(0,180,0);
-
 	public bool isWhiteTurn = true;
 
 	private void Start()
@@ -69,14 +67,14 @@ public class BoardManager : MonoBehaviour
             selectedChessman = null;
             return;
         }
-        
-		bool hasAtleastOneMove = false;
+
+        /*bool hasAtleastOneMove = false;
 		allowedMoves = selectedChessman.PossibleMove ();
 		for (int i = 0; i < 8; i++)
 			for (int j = 0; j < 8; j++)
 				if (allowedMoves [i, j])
 					hasAtleastOneMove = true;
-        /*
+        
 		if (!hasAtleastOneMove)
 			return;
         */
@@ -103,12 +101,7 @@ public class BoardManager : MonoBehaviour
             return;
         }
 
-        //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-        //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-        //These are arbitrary distances
-        //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-        //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-        if (distanceFromCentre < 1.8f)
+        if (distanceFromCentre < innerRingRadius)
         {
             Debug.Log("CLICKED ON CENTRE");
             boardTrack = 0;
@@ -116,7 +109,7 @@ public class BoardManager : MonoBehaviour
         }
         else
         {
-            if(distanceFromCentre < 4.3f)
+            if(distanceFromCentre < middleRingRadius)
             {
                 Debug.Log("CLICKED ON MIDDLE RING");
                 boardTrack = 1;
@@ -160,31 +153,23 @@ public class BoardManager : MonoBehaviour
 
         Chessman c = Chessmans[boardTrack, boardSector];
 
-        if (c != null && c.isWhite != isWhiteTurn)
+        if (((c != null && c.isWhite != isWhiteTurn) || (c == null)))
         {
-            Debug.Log("Passed the opposite team check");
-            //Capture a piece
+            if (c != null && c.isWhite != isWhiteTurn)
+            {
+                Debug.Log("Passed the opposite team check");
+                //Capture a piece
 
-            //If it is the king
-            if (c.GetType () == typeof(King))
-			{
-				EndGame ();
-				return;
-			}
-
-			activeChessman.Remove(c.gameObject);
-			Destroy (c.gameObject);
+                activeChessman.Remove(c.gameObject);
+                Destroy(c.gameObject);
+            }
 
             Chessmans[selectedChessman.CurrentX, selectedChessman.CurrentY] = null;
-            selectedChessman.transform.position = GetTileCenter(boardTrack, boardSector);
-            selectedChessman.SetPosition(boardTrack, boardSector);
-            Chessmans[boardTrack, boardSector] = selectedChessman;
-            isWhiteTurn = !isWhiteTurn;
-        }
-        else if(c == null)
-        {
-            Chessmans[selectedChessman.CurrentX, selectedChessman.CurrentY] = null;
-            selectedChessman.transform.position = GetTileCenter(boardTrack, boardSector);
+
+            Transform gamePieceTransform = selectedChessman.transform;
+            gamePieceTransform.position = GetTileCenter(boardTrack, boardSector);
+            gamePieceTransform.rotation = GetBoardOrientation(gamePieceTransform.position);
+
             selectedChessman.SetPosition(boardTrack, boardSector);
             Chessmans[boardTrack, boardSector] = selectedChessman;
             isWhiteTurn = !isWhiteTurn;
@@ -238,7 +223,7 @@ public class BoardManager : MonoBehaviour
                 }
             }
         }
-        else if (Physics.Raycast (Camera.main.ScreenPointToRay (Input.mousePosition), out hit, 25.0f, LayerMask.GetMask ("ChessPlane"))) 
+        else if (Physics.Raycast (Camera.main.ScreenPointToRay (Input.mousePosition), out hit, 25.0f, LayerMask.GetMask ("BoardPlane"))) 
 		{
             selectionX = hit.point.x;
 			selectionY = hit.point.z;
@@ -252,14 +237,25 @@ public class BoardManager : MonoBehaviour
 
 	private void SpawnChessman(int index,int x,int y)
 	{
-		GameObject go = Instantiate (chessmanPrefabs [index], GetTileCenter(x,y), orientation) as GameObject;
-		go.transform.SetParent (transform);
+        Vector3 spawnPoint = GetTileCenter(x, y);
+
+        GameObject go = Instantiate(chessmanPrefabs[index], spawnPoint, GetBoardOrientation(spawnPoint)) as GameObject;
+
+        go.transform.SetParent (transform);
 		Chessmans [x, y] = go.GetComponent<Chessman> ();
 		Chessmans [x, y].SetPosition (x, y);
 		activeChessman.Add (go);
 	}
 
-	private void SpawnAllChessmans()
+    private Quaternion GetBoardOrientation(Vector3 boardTranslation)
+    {
+        Quaternion facingDirection = Quaternion.FromToRotation(Vector3.forward, boardTranslation);
+
+        return facingDirection;
+    }
+
+
+    private void SpawnAllChessmans()
 	{
 		activeChessman = new List<GameObject> ();
 		Chessmans = new Chessman[3, 12];
@@ -271,11 +267,15 @@ public class BoardManager : MonoBehaviour
 
         SpawnChessman(2, 2, 2);
 
-        SpawnChessman(3, 2, 6);
+        SpawnChessman(3, 2, 3);
 
-        SpawnChessman(4, 2, 7);
+        SpawnChessman(4, 2, 6);
 
-        SpawnChessman(5, 2, 8);
+        SpawnChessman(5, 2, 7);
+
+        SpawnChessman(6, 2, 8);
+
+        SpawnChessman(7, 2, 9);
     }
 
 	private Vector3 GetTileCenter(float x, float y)
