@@ -3,14 +3,14 @@ using System.Collections;
 
 public abstract class Chessman : MonoBehaviour
 {
-	public int CurrentX{set;get;}
-	public int CurrentY{set;get;}
+	public int CurrentTrack{set;get;}
+	public int CurrentSegment{set;get;}
 	public bool isWhite;
 
-	public void SetPosition(int x,int y)
+	public void SetPosition(int a,int b)
 	{
-		CurrentX = x;
-		CurrentY = y;
+		CurrentTrack = a;
+		CurrentSegment = b;
 	}
 
 	public virtual bool[,] PossibleMove()

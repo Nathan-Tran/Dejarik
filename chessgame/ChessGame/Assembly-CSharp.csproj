@@ -45,15 +45,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\Scripts\Bishop.cs" />
-     <Compile Include="Assets\Scripts\BoardHighlights.cs" />
      <Compile Include="Assets\Scripts\BoardManager.cs" />
      <Compile Include="Assets\Scripts\Chessman.cs" />
-     <Compile Include="Assets\Scripts\King.cs" />
-     <Compile Include="Assets\Scripts\Knight.cs" />
      <Compile Include="Assets\Scripts\Pawn.cs" />
-     <Compile Include="Assets\Scripts\Queen.cs" />
-     <Compile Include="Assets\Scripts\Rook.cs" />
      <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonBasic.shader" />
      <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonBasicOutline.shader" />
      <None Include="Assets\Standard Assets\Effects\ToonShading\Shaders\ToonLitOutline.shader" />

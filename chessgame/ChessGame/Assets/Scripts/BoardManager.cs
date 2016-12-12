@@ -49,7 +49,7 @@ public class BoardManager : MonoBehaviour
                 //If the selection even makes contact with the plane collider
                 if (selectionX > -10000 && selectionY > -10000)
                 {
-                    MoveChessman(selectionX, selectionY);
+                    MoveChessman(CalculateBoardQuadrant(selectionX, selectionY));
                 }
             }
         }
@@ -86,8 +86,8 @@ public class BoardManager : MonoBehaviour
 		//BoardHighlights.Instance.HighlightAllowedMoves (allowedMoves);
 	}
 
-	private void MoveChessman(float x, float y)
-	{
+    private int[] CalculateBoardQuadrant(float x, float y)
+    {
         //Check if the x and y are even on the dejarik board, then calculate what quadrant was intended to be selected
         //Else return
 
@@ -95,34 +95,34 @@ public class BoardManager : MonoBehaviour
         float sectorAngle = 0;
 
         int boardTrack, boardSector;
+        int[] boardQuadrant = new int[2];
 
         if (distanceFromCentre > boardRadius)
         {
-            return;
+            Debug.Log("Clicked on invalid board location");
+
+            return null;
         }
 
         if (distanceFromCentre < innerRingRadius)
         {
-            Debug.Log("CLICKED ON CENTRE");
             boardTrack = 0;
             boardSector = 0;
         }
         else
         {
-            if(distanceFromCentre < middleRingRadius)
+            if (distanceFromCentre < middleRingRadius)
             {
-                Debug.Log("CLICKED ON MIDDLE RING");
                 boardTrack = 1;
             }
             else
             {
-                Debug.Log("CLICKED ON OUTER RING");
                 boardTrack = 2;
             }
 
-            if(x >= 0)
+            if (x >= 0)
             {
-                if(y < 0)
+                if (y < 0)
                 {
                     sectorAngle += 90;
 
@@ -151,28 +151,41 @@ public class BoardManager : MonoBehaviour
 
         }
 
-        Chessman c = Chessmans[boardTrack, boardSector];
+        //I store the value in the array only at the end of this method so that "boardTrack" and "boardSector" are used throughout, improving readability.
+        boardQuadrant[0] = boardTrack;
+        boardQuadrant[1] = boardSector;
 
-        if (((c != null && c.isWhite != isWhiteTurn) || (c == null)))
+        return boardQuadrant;
+
+    }
+
+    private void MoveChessman(int[] boardQuadrant)
+    {
+        if (boardQuadrant != null)
         {
-            if (c != null && c.isWhite != isWhiteTurn)
+            Chessman c = Chessmans[boardQuadrant[0], boardQuadrant[1]];
+
+            if (((c != null && c.isWhite != isWhiteTurn) || (c == null)))
             {
-                Debug.Log("Passed the opposite team check");
-                //Capture a piece
+                if (c != null && c.isWhite != isWhiteTurn)
+                {
+                    Debug.Log("Passed the opposite team check");
+                    //Capture a piece
 
-                activeChessman.Remove(c.gameObject);
-                Destroy(c.gameObject);
+                    activeChessman.Remove(c.gameObject);
+                    Destroy(c.gameObject);
+                }
+
+                Chessmans[selectedChessman.CurrentTrack, selectedChessman.CurrentSegment] = null;
+
+                Transform gamePieceTransform = selectedChessman.transform;
+                gamePieceTransform.position = GetTileCenter(boardQuadrant[0], boardQuadrant[1]);
+                gamePieceTransform.rotation = GetBoardOrientation(gamePieceTransform.position);
+
+                selectedChessman.SetPosition(boardQuadrant[0], boardQuadrant[1]);
+                Chessmans[boardQuadrant[0], boardQuadrant[1]] = selectedChessman;
+                isWhiteTurn = !isWhiteTurn;
             }
-
-            Chessmans[selectedChessman.CurrentX, selectedChessman.CurrentY] = null;
-
-            Transform gamePieceTransform = selectedChessman.transform;
-            gamePieceTransform.position = GetTileCenter(boardTrack, boardSector);
-            gamePieceTransform.rotation = GetBoardOrientation(gamePieceTransform.position);
-
-            selectedChessman.SetPosition(boardTrack, boardSector);
-            Chessmans[boardTrack, boardSector] = selectedChessman;
-            isWhiteTurn = !isWhiteTurn;
         }
 
 		selectedChessman.GetComponentInChildren<MeshRenderer> ().material = previousMat;
@@ -189,6 +202,8 @@ public class BoardManager : MonoBehaviour
 
         if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 25.0f, LayerMask.GetMask("GamePieces")))
         {
+            Debug.Log("clicked on a game piece");
+
             if(selectedChessman == null)
             {
                 selectedChessman = hit.transform.gameObject.GetComponentInParent<Chessman>();
@@ -209,6 +224,9 @@ public class BoardManager : MonoBehaviour
                 //If the player clicked on the same piece twice
                 if (selectedChessman == hit.transform.gameObject.GetComponentInParent<Chessman>())
                 {
+
+                    Debug.Log("clicked on the same game piece");
+
                     selectedChessman.GetComponentInChildren<MeshRenderer>().material = previousMat;
                     //BoardHighlights.Instance.Hidehighlights();
                     selectedChessman = null;
@@ -218,8 +236,11 @@ public class BoardManager : MonoBehaviour
                 }
                 else
                 {
-                    selectionX = hit.transform.gameObject.GetComponentInParent<Chessman>().CurrentX;
-                    selectionY = hit.transform.gameObject.GetComponentInParent<Chessman>().CurrentY;
+
+                    Debug.Log("clicked on a different piece");
+
+                    selectionX = hit.transform.gameObject.transform.position.x;
+                    selectionY = hit.transform.gameObject.transform.position.z;
                 }
             }
         }
