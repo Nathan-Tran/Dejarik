@@ -10,11 +10,10 @@ public class BoardManager : MonoBehaviour
 	public Chessman[,] Chessmans{ set; get;}
 	private Chessman selectedChessman;
 
-	//private const float TILE_SIZE = 1.0f;
-	//private const float TILE_OFFSET = 0.5f;
+    Vector3 origin;
 
     //Let -10000 be the value for an invalid selection
-	private float selectionX = -10000;
+    private float selectionX = -10000;
 	private float selectionY = -10000;
 
     private const float tileOffset = 3.2f;
@@ -25,17 +24,19 @@ public class BoardManager : MonoBehaviour
     public List<GameObject> chessmanPrefabs;
 	private List<GameObject> activeChessman;
 
-	private Material previousMat;
+    private Material previousMat;
 	public Material selectedMat;
-
-	public int[] EnPassantMove{ set; get;}
 
 	public bool isWhiteTurn = true;
 
 	private void Start()
 	{
 		Instance = this;
-		SpawnAllChessmans ();
+
+        //The center of the game board is the center of the box collider on the BoardPlane gameObject
+        origin = GetComponentInChildren<BoxCollider>().transform.position;
+
+        SpawnAllChessmans ();
 	}
 
 	private void Update()
@@ -88,8 +89,12 @@ public class BoardManager : MonoBehaviour
 
     private int[] CalculateBoardQuadrant(float x, float y)
     {
-        //Check if the x and y are even on the dejarik board, then calculate what quadrant was intended to be selected
-        //Else return
+        Debug.Log("The points to be calculated are");
+        Debug.Log(x);
+        Debug.Log(y);
+
+        //Check if the x and y are even in the dejarik circle, then calculate what quadrant was intended to be selected
+        //Else return null
 
         float distanceFromCentre = Mathf.Sqrt((x * x) + (y * y));
         float sectorAngle = 0;
@@ -154,6 +159,10 @@ public class BoardManager : MonoBehaviour
         //I store the value in the array only at the end of this method so that "boardTrack" and "boardSector" are used throughout, improving readability.
         boardQuadrant[0] = boardTrack;
         boardQuadrant[1] = boardSector;
+
+        Debug.Log("The calculated board position is:");
+        Debug.Log(boardTrack);
+        Debug.Log(boardSector);
 
         return boardQuadrant;
 
@@ -239,15 +248,25 @@ public class BoardManager : MonoBehaviour
 
                     Debug.Log("clicked on a different piece");
 
-                    selectionX = hit.transform.gameObject.transform.position.x;
-                    selectionY = hit.transform.gameObject.transform.position.z;
+                    /*
+                     * 
+                     * UGLY and WRONG
+                     * 
+                     */
+                    selectionX = hit.transform.gameObject.transform.position.x;// - Instance.transform.position.x;
+                    selectionY = hit.transform.gameObject.transform.position.z;// - Instance.transform.position.z;
                 }
             }
         }
         else if (Physics.Raycast (Camera.main.ScreenPointToRay (Input.mousePosition), out hit, 25.0f, LayerMask.GetMask ("BoardPlane"))) 
 		{
-            selectionX = hit.point.x;
-			selectionY = hit.point.z;
+            /*
+             * 
+             * UGLY and WRONG
+             * 
+             */
+            selectionX = hit.point.x;// - Instance.transform.position.x;
+            selectionY = hit.point.z;// - Instance.transform.position.z;
 		}
 		else
         {
@@ -270,7 +289,8 @@ public class BoardManager : MonoBehaviour
 
     private Quaternion GetBoardOrientation(Vector3 boardTranslation)
     {
-        Quaternion facingDirection = Quaternion.FromToRotation(Vector3.forward, boardTranslation);
+        //Quaternion facingDirection = Quaternion.FromToRotation(Vector3.forward, boardTranslation);
+        Quaternion facingDirection = Quaternion.FromToRotation(Vector3.forward, boardTranslation - origin);
 
         return facingDirection;
     }
@@ -309,9 +329,6 @@ public class BoardManager : MonoBehaviour
 		return origin;*/
 
         //Dejarik board math
-
-        Vector3 origin = Vector3.zero;
-
         if (x == 0)
         {
             return origin;
@@ -320,7 +337,7 @@ public class BoardManager : MonoBehaviour
         {
             //Maybe normalize the vector here?
 
-            return origin + (Quaternion.AngleAxis(15 + (30 * y), Vector3.up) * Vector3.forward) * (tileOffset * x);
+            return origin + (Quaternion.AngleAxis(15 + (30 * y), Vector3.up) * Instance.transform.forward) * (tileOffset * x);
         }
 
     }
