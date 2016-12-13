@@ -265,10 +265,27 @@ public class BoardManager : MonoBehaviour
              * UGLY and WRONG
              * 
              */
-            selectionX = hit.point.x;// - Instance.transform.position.x;
-            selectionY = hit.point.z;// - Instance.transform.position.z;
-		}
-		else
+            //selectionX = hit.point.x - Instance.transform.position.x;
+            //selectionY = hit.point.z - Instance.transform.position.z;
+
+
+            //selectionX = hit.transform.localPosition.x;
+            //selectionY = hit.transform.localPosition.z;
+
+
+            //Project hit.point - Instance.transform.position onto Instance.transform.forward
+
+            //selectionX = Vector3.Project((hit.point - Instance.transform.position), Instance.transform.right).magnitude;
+            //selectionY = Vector3.Project((hit.point - Instance.transform.position), Instance.transform.forward).magnitude;
+
+            Vector3 lol = Instance.transform.InverseTransformPoint(hit.point);
+
+            selectionX = lol.x;
+            selectionY = lol.z;
+
+
+        }
+        else
         {
             selectionX = -10000;
 			selectionY = -10000;
