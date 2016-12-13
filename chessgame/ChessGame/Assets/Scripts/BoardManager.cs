@@ -211,8 +211,6 @@ public class BoardManager : MonoBehaviour
 
         if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 25.0f, LayerMask.GetMask("GamePieces")))
         {
-            Debug.Log("clicked on a game piece");
-
             if(selectedChessman == null)
             {
                 selectedChessman = hit.transform.gameObject.GetComponentInParent<Chessman>();
@@ -233,11 +231,8 @@ public class BoardManager : MonoBehaviour
                 //If the player clicked on the same piece twice
                 if (selectedChessman == hit.transform.gameObject.GetComponentInParent<Chessman>())
                 {
-
-                    Debug.Log("clicked on the same game piece");
-
                     selectedChessman.GetComponentInChildren<MeshRenderer>().material = previousMat;
-                    //BoardHighlights.Instance.Hidehighlights();
+                    
                     selectedChessman = null;
 
                     selectionX = -10000;
@@ -253,36 +248,22 @@ public class BoardManager : MonoBehaviour
                      * UGLY and WRONG
                      * 
                      */
-                    selectionX = hit.transform.gameObject.transform.position.x;// - Instance.transform.position.x;
-                    selectionY = hit.transform.gameObject.transform.position.z;// - Instance.transform.position.z;
+                    //selectionX = hit.transform.gameObject.transform.position.x;// - Instance.transform.position.x;
+                    //selectionY = hit.transform.gameObject.transform.position.z;// - Instance.transform.position.z;
+
+                    Vector3 relativeHitPosition = Instance.transform.InverseTransformPoint(hit.transform.gameObject.transform.position);
+
+                    selectionX = relativeHitPosition.x;
+                    selectionY = relativeHitPosition.z;
                 }
             }
         }
         else if (Physics.Raycast (Camera.main.ScreenPointToRay (Input.mousePosition), out hit, 25.0f, LayerMask.GetMask ("BoardPlane"))) 
 		{
-            /*
-             * 
-             * UGLY and WRONG
-             * 
-             */
-            //selectionX = hit.point.x - Instance.transform.position.x;
-            //selectionY = hit.point.z - Instance.transform.position.z;
+            Vector3 relativeHitPosition = Instance.transform.InverseTransformPoint(hit.point);
 
-
-            //selectionX = hit.transform.localPosition.x;
-            //selectionY = hit.transform.localPosition.z;
-
-
-            //Project hit.point - Instance.transform.position onto Instance.transform.forward
-
-            //selectionX = Vector3.Project((hit.point - Instance.transform.position), Instance.transform.right).magnitude;
-            //selectionY = Vector3.Project((hit.point - Instance.transform.position), Instance.transform.forward).magnitude;
-
-            Vector3 lol = Instance.transform.InverseTransformPoint(hit.point);
-
-            selectionX = lol.x;
-            selectionY = lol.z;
-
+            selectionX = relativeHitPosition.x;
+            selectionY = relativeHitPosition.z;
 
         }
         else
