@@ -17,10 +17,10 @@ public class BoardManager : MonoBehaviour
 	private float selectionY = -10000;
 
     //I should base these values off the scale of the board
-    private const float tileOffset = 0.15f;
-    private const float innerRingRadius = 0.06f;
-    private const float middleRingRadius = 0.23f;
-    private const float boardRadius = 0.37f;
+    private const float tileOffset = 0.11f;
+    private const float innerRingRadius = 0.05f;
+    private const float middleRingRadius = 0.16f;
+    private const float boardRadius = 0.26f;
 
     public List<GameObject> chessmanPrefabs;
 	private List<GameObject> activeChessman;
