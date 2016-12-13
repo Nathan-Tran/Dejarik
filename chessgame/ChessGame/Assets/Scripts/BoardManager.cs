@@ -10,32 +10,34 @@ public class BoardManager : MonoBehaviour
 	public Chessman[,] Chessmans{ set; get;}
 	private Chessman selectedChessman;
 
-	//private const float TILE_SIZE = 1.0f;
-	//private const float TILE_OFFSET = 0.5f;
+    Vector3 origin;
 
     //Let -10000 be the value for an invalid selection
-	private float selectionX = -10000;
+    private float selectionX = -10000;
 	private float selectionY = -10000;
 
-    private const float tileOffset = 3.2f;
-    private const float innerRingRadius = 1.8f;
-    private const float middleRingRadius = 4.3f;
-    private const float boardRadius = 8.0f;
+    //I should base these values off the scale of the board
+    private const float tileOffset = 0.15f;
+    private const float innerRingRadius = 0.06f;
+    private const float middleRingRadius = 0.23f;
+    private const float boardRadius = 0.37f;
 
     public List<GameObject> chessmanPrefabs;
 	private List<GameObject> activeChessman;
 
-	private Material previousMat;
+    private Material previousMat;
 	public Material selectedMat;
-
-	public int[] EnPassantMove{ set; get;}
 
 	public bool isWhiteTurn = true;
 
 	private void Start()
 	{
 		Instance = this;
-		SpawnAllChessmans ();
+
+        //The center of the game board is the center of the box collider on the BoardPlane gameObject
+        origin = GetComponentInChildren<BoxCollider>().transform.position;
+
+        SpawnAllChessmans ();
 	}
 
 	private void Update()
@@ -49,12 +51,10 @@ public class BoardManager : MonoBehaviour
                 //If the selection even makes contact with the plane collider
                 if (selectionX > -10000 && selectionY > -10000)
                 {
-                    MoveChessman(selectionX, selectionY);
+                    MoveChessman(CalculateBoardQuadrant(selectionX, selectionY));
                 }
             }
         }
-
-        DrawChessboard();
     }
 
 	private void ActivateChessman()
@@ -86,43 +86,47 @@ public class BoardManager : MonoBehaviour
 		//BoardHighlights.Instance.HighlightAllowedMoves (allowedMoves);
 	}
 
-	private void MoveChessman(float x, float y)
-	{
-        //Check if the x and y are even on the dejarik board, then calculate what quadrant was intended to be selected
-        //Else return
+    private int[] CalculateBoardQuadrant(float x, float y)
+    {
+        Debug.Log("The points to be calculated are");
+        Debug.Log(x);
+        Debug.Log(y);
+
+        //Check if the x and y are even in the dejarik circle, then calculate what quadrant was intended to be selected
+        //Else return null
 
         float distanceFromCentre = Mathf.Sqrt((x * x) + (y * y));
         float sectorAngle = 0;
 
         int boardTrack, boardSector;
+        int[] boardQuadrant = new int[2];
 
         if (distanceFromCentre > boardRadius)
         {
-            return;
+            Debug.Log("Clicked on invalid board location");
+
+            return null;
         }
 
         if (distanceFromCentre < innerRingRadius)
         {
-            Debug.Log("CLICKED ON CENTRE");
             boardTrack = 0;
             boardSector = 0;
         }
         else
         {
-            if(distanceFromCentre < middleRingRadius)
+            if (distanceFromCentre < middleRingRadius)
             {
-                Debug.Log("CLICKED ON MIDDLE RING");
                 boardTrack = 1;
             }
             else
             {
-                Debug.Log("CLICKED ON OUTER RING");
                 boardTrack = 2;
             }
 
-            if(x >= 0)
+            if (x >= 0)
             {
-                if(y < 0)
+                if (y < 0)
                 {
                     sectorAngle += 90;
 
@@ -151,28 +155,45 @@ public class BoardManager : MonoBehaviour
 
         }
 
-        Chessman c = Chessmans[boardTrack, boardSector];
+        //I store the value in the array only at the end of this method so that "boardTrack" and "boardSector" are used throughout, improving readability.
+        boardQuadrant[0] = boardTrack;
+        boardQuadrant[1] = boardSector;
 
-        if (((c != null && c.isWhite != isWhiteTurn) || (c == null)))
+        Debug.Log("The calculated board position is:");
+        Debug.Log(boardTrack);
+        Debug.Log(boardSector);
+
+        return boardQuadrant;
+
+    }
+
+    private void MoveChessman(int[] boardQuadrant)
+    {
+        if (boardQuadrant != null)
         {
-            if (c != null && c.isWhite != isWhiteTurn)
+            Chessman c = Chessmans[boardQuadrant[0], boardQuadrant[1]];
+
+            if (((c != null && c.isWhite != isWhiteTurn) || (c == null)))
             {
-                Debug.Log("Passed the opposite team check");
-                //Capture a piece
+                if (c != null && c.isWhite != isWhiteTurn)
+                {
+                    Debug.Log("Passed the opposite team check");
+                    //Capture a piece
 
-                activeChessman.Remove(c.gameObject);
-                Destroy(c.gameObject);
+                    activeChessman.Remove(c.gameObject);
+                    Destroy(c.gameObject);
+                }
+
+                Chessmans[selectedChessman.CurrentTrack, selectedChessman.CurrentSegment] = null;
+
+                Transform gamePieceTransform = selectedChessman.transform;
+                gamePieceTransform.position = GetTileCenter(boardQuadrant[0], boardQuadrant[1]);
+                gamePieceTransform.rotation = GetBoardOrientation(gamePieceTransform.position);
+
+                selectedChessman.SetPosition(boardQuadrant[0], boardQuadrant[1]);
+                Chessmans[boardQuadrant[0], boardQuadrant[1]] = selectedChessman;
+                isWhiteTurn = !isWhiteTurn;
             }
-
-            Chessmans[selectedChessman.CurrentX, selectedChessman.CurrentY] = null;
-
-            Transform gamePieceTransform = selectedChessman.transform;
-            gamePieceTransform.position = GetTileCenter(boardTrack, boardSector);
-            gamePieceTransform.rotation = GetBoardOrientation(gamePieceTransform.position);
-
-            selectedChessman.SetPosition(boardTrack, boardSector);
-            Chessmans[boardTrack, boardSector] = selectedChessman;
-            isWhiteTurn = !isWhiteTurn;
         }
 
 		selectedChessman.GetComponentInChildren<MeshRenderer> ().material = previousMat;
@@ -210,7 +231,7 @@ public class BoardManager : MonoBehaviour
                 if (selectedChessman == hit.transform.gameObject.GetComponentInParent<Chessman>())
                 {
                     selectedChessman.GetComponentInChildren<MeshRenderer>().material = previousMat;
-                    //BoardHighlights.Instance.Hidehighlights();
+                    
                     selectedChessman = null;
 
                     selectionX = -10000;
@@ -218,17 +239,33 @@ public class BoardManager : MonoBehaviour
                 }
                 else
                 {
-                    selectionX = hit.transform.gameObject.GetComponentInParent<Chessman>().CurrentX;
-                    selectionY = hit.transform.gameObject.GetComponentInParent<Chessman>().CurrentY;
+
+                    Debug.Log("clicked on a different piece");
+
+                    /*
+                     * 
+                     * UGLY and WRONG
+                     * 
+                     */
+                    //selectionX = hit.transform.gameObject.transform.position.x;// - Instance.transform.position.x;
+                    //selectionY = hit.transform.gameObject.transform.position.z;// - Instance.transform.position.z;
+
+                    Vector3 relativeHitPosition = Instance.transform.InverseTransformPoint(hit.transform.gameObject.transform.position);
+
+                    selectionX = relativeHitPosition.x;
+                    selectionY = relativeHitPosition.z;
                 }
             }
         }
         else if (Physics.Raycast (Camera.main.ScreenPointToRay (Input.mousePosition), out hit, 25.0f, LayerMask.GetMask ("BoardPlane"))) 
 		{
-            selectionX = hit.point.x;
-			selectionY = hit.point.z;
-		}
-		else
+            Vector3 relativeHitPosition = Instance.transform.InverseTransformPoint(hit.point);
+
+            selectionX = relativeHitPosition.x;
+            selectionY = relativeHitPosition.z;
+
+        }
+        else
         {
             selectionX = -10000;
 			selectionY = -10000;
@@ -249,7 +286,8 @@ public class BoardManager : MonoBehaviour
 
     private Quaternion GetBoardOrientation(Vector3 boardTranslation)
     {
-        Quaternion facingDirection = Quaternion.FromToRotation(Vector3.forward, boardTranslation);
+        //Quaternion facingDirection = Quaternion.FromToRotation(Vector3.forward, boardTranslation);
+        Quaternion facingDirection = Quaternion.FromToRotation(Vector3.forward, boardTranslation - origin);
 
         return facingDirection;
     }
@@ -288,9 +326,6 @@ public class BoardManager : MonoBehaviour
 		return origin;*/
 
         //Dejarik board math
-
-        Vector3 origin = Vector3.zero;
-
         if (x == 0)
         {
             return origin;
@@ -299,50 +334,9 @@ public class BoardManager : MonoBehaviour
         {
             //Maybe normalize the vector here?
 
-            return origin + (Quaternion.AngleAxis(15 + (30 * y), Vector3.up) * Vector3.forward) * (tileOffset * x);
+            return origin + (Quaternion.AngleAxis(15 + (30 * y), Vector3.up) * Instance.transform.forward) * (tileOffset * x);
         }
 
-    }
-
-	private void DrawChessboard()
-	{
-        /*
-         * 
-         *Draw debug circles
-         *
-         */
-
-        for (int i = 0; i <= 12; i++)
-        {
-            Vector3 start = (Quaternion.AngleAxis((30 * i), Vector3.up) * Vector3.forward);
-            Debug.DrawLine(Vector3.zero, start * boardRadius);
-        }
-
-        /*Vector3 widthLine = Vector3.right * 8;
-		Vector3 heigthLine = Vector3.forward * 8;
-
-		for (int i = 0; i <= 8; i++) 
-		{
-			Vector3 start = Vector3.forward * i;
-			Debug.DrawLine (start, start + widthLine);
-			for (int j = 0; j <= 8; j++) 
-			{
-				start = Vector3.right * j;
-				Debug.DrawLine (start, start + heigthLine);
-			}
-		}*/
-
-        // Draw the selection
-        /*if (selectionX >= 0 && selectionY >= 0)
-		{	
-			Debug.DrawLine (
-				Vector3.forward * selectionY + Vector3.right * selectionX,
-				Vector3.forward * (selectionY + 1) + Vector3.right * (selectionX + 1));
-
-			Debug.DrawLine (
-				Vector3.forward * (selectionY + 1 )+ Vector3.right * selectionX,
-				Vector3.forward * selectionY + Vector3.right * (selectionX + 1));
-		}*/
     }
 
 	private void EndGame()
