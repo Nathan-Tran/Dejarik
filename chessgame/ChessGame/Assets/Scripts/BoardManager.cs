@@ -16,10 +16,11 @@ public class BoardManager : MonoBehaviour
     private float selectionX = -10000;
 	private float selectionY = -10000;
 
-    private const float tileOffset = 3.2f;
-    private const float innerRingRadius = 1.8f;
-    private const float middleRingRadius = 4.3f;
-    private const float boardRadius = 8.0f;
+    //I should base these values off the scale of the board
+    private const float tileOffset = 0.15f;
+    private const float innerRingRadius = 0.06f;
+    private const float middleRingRadius = 0.23f;
+    private const float boardRadius = 0.37f;
 
     public List<GameObject> chessmanPrefabs;
 	private List<GameObject> activeChessman;
@@ -54,8 +55,6 @@ public class BoardManager : MonoBehaviour
                 }
             }
         }
-
-        DrawChessboard();
     }
 
 	private void ActivateChessman()
@@ -338,47 +337,6 @@ public class BoardManager : MonoBehaviour
             return origin + (Quaternion.AngleAxis(15 + (30 * y), Vector3.up) * Instance.transform.forward) * (tileOffset * x);
         }
 
-    }
-
-	private void DrawChessboard()
-	{
-        /*
-         * 
-         *Draw debug circles
-         *
-         */
-
-        for (int i = 0; i <= 12; i++)
-        {
-            Vector3 start = (Quaternion.AngleAxis((30 * i), Vector3.up) * Vector3.forward);
-            Debug.DrawLine(Vector3.zero, start * boardRadius);
-        }
-
-        /*Vector3 widthLine = Vector3.right * 8;
-		Vector3 heigthLine = Vector3.forward * 8;
-
-		for (int i = 0; i <= 8; i++) 
-		{
-			Vector3 start = Vector3.forward * i;
-			Debug.DrawLine (start, start + widthLine);
-			for (int j = 0; j <= 8; j++) 
-			{
-				start = Vector3.right * j;
-				Debug.DrawLine (start, start + heigthLine);
-			}
-		}*/
-
-        // Draw the selection
-        /*if (selectionX >= 0 && selectionY >= 0)
-		{	
-			Debug.DrawLine (
-				Vector3.forward * selectionY + Vector3.right * selectionX,
-				Vector3.forward * (selectionY + 1) + Vector3.right * (selectionX + 1));
-
-			Debug.DrawLine (
-				Vector3.forward * (selectionY + 1 )+ Vector3.right * selectionX,
-				Vector3.forward * selectionY + Vector3.right * (selectionX + 1));
-		}*/
     }
 
 	private void EndGame()
